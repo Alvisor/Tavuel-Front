@@ -1,24 +1,36 @@
-import { Settings } from "lucide-react";
+"use client";
+
+import { PageHeader } from "@/components/layout/page-header";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CategoriesTab } from "./categories-tab";
+import { ConfigTab } from "./config-tab";
+import { AdminsTab } from "./admins-tab";
 
 export default function SettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Configuración</h1>
-        <p className="text-sm text-muted-foreground">
-          Configuración general de la plataforma
-        </p>
-      </div>
+      <PageHeader
+        title="Configuración"
+        description="Configuración general de la plataforma"
+      />
 
-      <div className="flex h-96 items-center justify-center rounded-lg border border-dashed border-border bg-card">
-        <div className="text-center">
-          <Settings className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-medium">Configuración</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Aquí se mostrará la configuración de la plataforma, comisiones, y ajustes generales.
-          </p>
-        </div>
-      </div>
+      <Tabs defaultValue="categories">
+        <TabsList>
+          <TabsTrigger value="categories">Categorías y Servicios</TabsTrigger>
+          <TabsTrigger value="config">Configuración</TabsTrigger>
+          <TabsTrigger value="admins">Administradores</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="categories" className="mt-4">
+          <CategoriesTab />
+        </TabsContent>
+        <TabsContent value="config" className="mt-4">
+          <ConfigTab />
+        </TabsContent>
+        <TabsContent value="admins" className="mt-4">
+          <AdminsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

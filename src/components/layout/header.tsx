@@ -1,8 +1,17 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Bell, ChevronRight, CircleUser } from "lucide-react";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, ChevronRight, LogOut, CircleUser } from "lucide-react";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const routeLabels: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -17,14 +26,23 @@ const routeLabels: Record<string, string> = {
 
 export function Header() {
   const pathname = usePathname();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
-  const currentLabel = routeLabels[pathname] || "Dashboard";
+  const currentLabel =
+    Object.entries(routeLabels).find(([path]) =>
+      pathname.startsWith(path)
+    )?.[1] || "Dashboard";
 
   const handleLogout = () => {
-    localStorage.removeItem("tavuel_token");
-    window.location.href = "/login";
+    logout();
+    router.push("/login");
   };
+
+  const displayName = user
+    ? `${user.firstName} ${user.lastName}`
+    : "Administrador";
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
@@ -38,46 +56,41 @@ export function Header() {
       {/* Right side */}
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+        <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-4 w-4" />
           <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
           </span>
-        </button>
+        </Button>
 
         {/* User menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
-          >
-            <CircleUser className="h-5 w-5 text-muted-foreground" />
-            <span className="hidden font-medium sm:inline-block">Admin</span>
-          </button>
-
-          {showUserMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowUserMenu(false)}
-              />
-              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-popover p-1 shadow-lg">
-                <div className="px-3 py-2 text-sm">
-                  <p className="font-medium">Administrador</p>
-                  <p className="text-muted-foreground">admin@tavuel.com</p>
-                </div>
-                <div className="my-1 h-px bg-border" />
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center rounded-sm px-3 py-2 text-sm text-destructive hover:bg-accent"
-                >
-                  Cerrar sesión
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="gap-2">
+              <CircleUser className="h-5 w-5 text-muted-foreground" />
+              <span className="hidden font-medium sm:inline-block">
+                {displayName}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>
+              <p className="font-medium">{displayName}</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                {user?.email || "admin@tavuel.com"}
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   LayoutDashboard,
@@ -17,57 +17,28 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 const navItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Usuarios",
-    href: "/users",
-    icon: Users,
-  },
-  {
-    title: "Proveedores",
-    href: "/providers",
-    icon: Wrench,
-  },
-  {
-    title: "Bookings",
-    href: "/bookings",
-    icon: CalendarCheck,
-  },
-  {
-    title: "PQRS",
-    href: "/pqrs",
-    icon: MessageSquareWarning,
-  },
-  {
-    title: "Pagos",
-    href: "/payments",
-    icon: CreditCard,
-  },
-  {
-    title: "Reportes",
-    href: "/reports",
-    icon: BarChart3,
-  },
-  {
-    title: "Configuración",
-    href: "/settings",
-    icon: Settings,
-  },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Usuarios", href: "/users", icon: Users },
+  { title: "Proveedores", href: "/providers", icon: Wrench },
+  { title: "Bookings", href: "/bookings", icon: CalendarCheck },
+  { title: "PQRS", href: "/pqrs", icon: MessageSquareWarning },
+  { title: "Pagos", href: "/payments", icon: CreditCard },
+  { title: "Reportes", href: "/reports", icon: BarChart3 },
+  { title: "Configuración", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const logout = useAuthStore((s) => s.logout);
 
   const handleLogout = () => {
-    localStorage.removeItem("tavuel_token");
-    window.location.href = "/login";
+    logout();
+    router.push("/login");
   };
 
   return (
@@ -138,6 +109,15 @@ export function Sidebar() {
           {!collapsed && <span>Cerrar sesión</span>}
         </button>
       </div>
+
+      {/* Branding */}
+      {!collapsed && (
+        <div className="border-t border-sidebar-border px-4 py-3 text-center">
+          <p className="text-[10px] text-sidebar-foreground/40">
+            Tavuel v1.0.0 — Z Solutions
+          </p>
+        </div>
+      )}
     </aside>
   );
 }

@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Home, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import apiClient from "@/lib/api/client";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,15 +23,23 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await apiClient.post("/auth/login", { email, password });
-      // localStorage.setItem("tavuel_token", response.data.token);
+      const data = await apiClient.post<{
+        user: { id: string; email: string; firstName: string; lastName: string; role: string; avatarUrl: string | null };
+        accessToken: string;
+        refreshToken: string;
+      }>("/auth/login", { email, password });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (data.user.role !== "ADMIN") {
+        setError("Solo los administradores pueden acceder a este panel.");
+        setIsLoading(false);
+        return;
+      }
 
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+      useAuthStore
+        .getState()
+        .setAuth(data.user, data.accessToken, data.refreshToken);
+
+      router.push("/dashboard");
     } catch {
       setError("Credenciales inválidas. Por favor intenta de nuevo.");
     } finally {
@@ -41,10 +56,13 @@ export default function LoginPage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary-foreground">
               <Home className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold text-primary-foreground">Tavuel</h1>
+            <h1 className="text-4xl font-bold text-primary-foreground">
+              Tavuel
+            </h1>
           </div>
           <p className="text-lg text-primary-foreground/80">
-            Plataforma de servicios para el hogar. Gestiona usuarios, proveedores, reservas y más desde un solo lugar.
+            Plataforma de servicios para el hogar. Gestiona usuarios,
+            proveedores, reservas y más desde un solo lugar.
           </p>
         </div>
       </div>
@@ -77,39 +95,28 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium leading-none"
-              >
-                Correo electrónico
-              </label>
-              <input
+              <Label htmlFor="email">Correo electrónico</Label>
+              <Input
                 id="email"
                 type="email"
                 placeholder="admin@tavuel.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium leading-none"
-              >
-                Contraseña
-              </label>
+              <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
-                <input
+                <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="pr-10"
                 />
                 <button
                   type="button"
@@ -125,20 +132,16 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Ingresando...
                 </>
               ) : (
                 "Iniciar sesión"
               )}
-            </button>
+            </Button>
           </form>
 
           <p className="text-center text-xs text-muted-foreground">
