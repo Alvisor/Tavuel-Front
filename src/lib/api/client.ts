@@ -18,6 +18,8 @@ function handleUnauthorized() {
     method: "POST",
     credentials: "include",
   }).catch(() => {});
+  // Clear frontend session cookie
+  document.cookie = "tavuel_session=; path=/; max-age=0";
   const { useAuthStore } = require("@/lib/stores/auth-store");
   useAuthStore.getState().logout();
   window.location.href = "/login";
@@ -36,6 +38,10 @@ async function attemptTokenRefresh(): Promise<boolean> {
         method: "POST",
         credentials: "include",
       });
+      if (res.ok) {
+        // Renew frontend session cookie
+        document.cookie = "tavuel_session=1; path=/; max-age=900; SameSite=Lax";
+      }
       return res.ok;
     } catch {
       return false;

@@ -26,6 +26,9 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => {
         set({ user: null });
+        if (typeof document !== "undefined") {
+          document.cookie = "tavuel_session=; path=/; max-age=0";
+        }
       },
     }),
     {

@@ -50,6 +50,9 @@ export default function LoginPage() {
       failCount.current = 0;
       useAuthStore.getState().setAuth(data.user);
 
+      // Set session cookie on frontend domain for middleware routing
+      document.cookie = "tavuel_session=1; path=/; max-age=900; SameSite=Lax";
+
       router.push("/dashboard");
     } catch {
       failCount.current += 1;
