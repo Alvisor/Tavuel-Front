@@ -11,17 +11,41 @@ class ApiError extends Error {
   }
 }
 
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const { useAuthStore } = require("@/lib/stores/auth-store");
-  return useAuthStore.getState().accessToken;
-}
-
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
+  // Call admin-logout to clear HttpOnly cookies server-side
+  fetch(`${BASE_URL}/auth/admin-logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
   const { useAuthStore } = require("@/lib/stores/auth-store");
   useAuthStore.getState().logout();
   window.location.href = "/login";
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) return refreshPromise;
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/admin-refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 function buildQuery(params?: Record<string, unknown>): string {
@@ -48,8 +72,6 @@ async function request<T>(
   const url = `${BASE_URL}${path}${buildQuery(params)}`;
 
   const headers: Record<string, string> = {};
-  const token = getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   if (method !== "GET" && method !== "DELETE") {
     headers["Content-Type"] = "application/json";
@@ -58,10 +80,29 @@ async function request<T>(
   const res = await fetch(url, {
     method,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   if (res.status === 401) {
+    // Attempt cookie-based refresh before giving up
+    const refreshed = await attemptTokenRefresh();
+    if (refreshed) {
+      const retryRes = await fetch(url, {
+        method,
+        headers,
+        credentials: "include",
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+
+      if (retryRes.ok) {
+        const data = retryRes.headers.get("content-type")?.includes("application/json")
+          ? await retryRes.json()
+          : await retryRes.text();
+        return data as T;
+      }
+    }
+
     handleUnauthorized();
     throw new ApiError(401, { message: "Unauthorized" });
   }

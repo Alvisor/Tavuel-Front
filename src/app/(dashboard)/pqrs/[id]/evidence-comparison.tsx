@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Evidence } from "@/lib/api/types";
+import { safeImageUrl } from "@/lib/utils";
 
 interface EvidenceComparisonProps {
   evidences: Evidence[];
@@ -62,7 +63,7 @@ export function EvidenceComparison({ evidences }: EvidenceComparisonProps) {
                       className="relative aspect-square overflow-hidden rounded-md border hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <img
-                        src={evidence.thumbnailUrl || evidence.url}
+                        src={safeImageUrl(evidence.thumbnailUrl || evidence.url)}
                         alt="Evidencia antes"
                         className="h-full w-full object-cover"
                       />
@@ -90,7 +91,7 @@ export function EvidenceComparison({ evidences }: EvidenceComparisonProps) {
                       className="relative aspect-square overflow-hidden rounded-md border hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <img
-                        src={evidence.thumbnailUrl || evidence.url}
+                        src={safeImageUrl(evidence.thumbnailUrl || evidence.url)}
                         alt="Evidencia después"
                         className="h-full w-full object-cover"
                       />
@@ -111,7 +112,7 @@ export function EvidenceComparison({ evidences }: EvidenceComparisonProps) {
           <DialogTitle className="sr-only">Evidencia ampliada</DialogTitle>
           {selectedImage && (
             <img
-              src={selectedImage}
+              src={safeImageUrl(selectedImage)}
               alt="Evidencia ampliada"
               className="w-full h-auto rounded-md"
             />

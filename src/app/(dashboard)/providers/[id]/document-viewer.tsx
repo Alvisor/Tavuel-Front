@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { FileText, ZoomIn } from "lucide-react";
 import type { ProviderDocument } from "@/lib/api/types";
+import { safeImageUrl } from "@/lib/utils";
 
 const documentTypeLabels: Record<string, string> = {
   CEDULA_FRONT: "Cédula Frontal",
@@ -82,7 +83,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={doc.url}
+                  src={safeImageUrl(doc.url)}
                   alt={typeLabel}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
@@ -148,7 +149,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
             <div className="mt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={selectedDoc.url}
+                src={safeImageUrl(selectedDoc.url)}
                 alt={
                   documentTypeLabels[selectedDoc.type] || selectedDoc.type
                 }

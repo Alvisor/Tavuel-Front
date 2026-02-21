@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import apiClient from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
+const BACKOFF_DELAYS = [0, 0, 0, 5, 15, 30, 60]; // seconds after N failures
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -16,32 +18,48 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const failCount = useRef(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const startCooldown = useCallback((seconds: number) => {
+    setCooldown(seconds);
+    clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownTimer.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
     setError("");
     setIsLoading(true);
 
     try {
       const data = await apiClient.post<{
         user: { id: string; email: string; firstName: string; lastName: string; role: string; avatarUrl: string | null };
-        accessToken: string;
-        refreshToken: string;
-      }>("/auth/login", { email, password });
+      }>("/auth/admin-login", { email, password });
 
-      if (data.user.role !== "ADMIN") {
-        setError("Solo los administradores pueden acceder a este panel.");
-        setIsLoading(false);
-        return;
-      }
-
-      useAuthStore
-        .getState()
-        .setAuth(data.user, data.accessToken, data.refreshToken);
+      failCount.current = 0;
+      useAuthStore.getState().setAuth(data.user);
 
       router.push("/dashboard");
     } catch {
-      setError("Credenciales inválidas. Por favor intenta de nuevo.");
+      failCount.current += 1;
+      const delay = BACKOFF_DELAYS[Math.min(failCount.current, BACKOFF_DELAYS.length - 1)];
+      if (delay > 0) {
+        startCooldown(delay);
+        setError(`Demasiados intentos. Espera ${delay} segundos.`);
+      } else {
+        setError("Credenciales inválidas. Por favor intenta de nuevo.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -132,12 +150,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || cooldown > 0}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Ingresando...
                 </>
+              ) : cooldown > 0 ? (
+                `Espera ${cooldown}s`
               ) : (
                 "Iniciar sesión"
               )}

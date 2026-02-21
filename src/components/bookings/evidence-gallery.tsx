@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Evidence, EvidenceType } from "@/lib/api/types";
+import { safeImageUrl } from "@/lib/utils";
 
 const typeLabels: Record<EvidenceType, string> = {
   BEFORE: "Antes",
@@ -69,7 +70,7 @@ export function EvidenceGallery({ evidences }: EvidenceGalleryProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={evidence.thumbnailUrl || evidence.url}
+                    src={safeImageUrl(evidence.thumbnailUrl || evidence.url)}
                     alt={`Evidencia ${typeLabels[type]}`}
                     className="h-full w-full object-cover"
                   />
@@ -98,7 +99,7 @@ export function EvidenceGallery({ evidences }: EvidenceGalleryProps) {
             <div className="space-y-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={selectedEvidence.url}
+                src={safeImageUrl(selectedEvidence.url)}
                 alt={`Evidencia ${typeLabels[selectedEvidence.type]}`}
                 className="w-full rounded-md"
               />
